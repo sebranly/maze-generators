@@ -12,9 +12,12 @@ typedef struct Cell Cell;
 struct Cell {
     unsigned int idPath;
     unsigned int walls[NUMBER_OF_WALLS_PER_CELL];
+    unsigned int belongsToExitPath;
+    unsigned int alreadyChecked;
 };
 
 void displayMaze(Cell maze[][MAZE_HEIGHT]);
+int findExit(Cell maze[][MAZE_HEIGHT], unsigned int xPosition, unsigned int yPosition);
 
 int main()
 {
@@ -30,6 +33,8 @@ int main()
         for (j = 0 ; j < MAZE_HEIGHT ; j++)
         {
             maze[i][j].idPath = i + j * MAZE_WIDTH;
+            maze[i][j].belongsToExitPath = 0;
+            maze[i][j].alreadyChecked = 0;
             for (k = 0 ; k < NUMBER_OF_WALLS_PER_CELL ; k++)
                 maze[i][j].walls[k] = 1;
         }
@@ -73,6 +78,9 @@ int main()
         }
     }
 
+    maze[MAZE_WIDTH - 1][MAZE_HEIGHT - 1].belongsToExitPath = 1;
+    findExit(maze, 0, 0);
+
     displayMaze(maze);
     return 0;
 }
@@ -80,6 +88,7 @@ int main()
 void displayMaze(Cell maze[][MAZE_HEIGHT])
 {
     int i, j;
+    printf("\n\n");
     for (j = 0 ; j < MAZE_HEIGHT ; j++)
     {
         for (i = 0 ; i < MAZE_WIDTH ; i++)
@@ -94,9 +103,13 @@ void displayMaze(Cell maze[][MAZE_HEIGHT])
         for (i = 0 ; i < MAZE_WIDTH ; i++)
         {
             if (maze[i][j].walls[WEST])
-                printf("|   ");
+                printf("|");
             else
-                printf("    ");
+                printf(" ");
+            if (maze[i][j].belongsToExitPath)
+                printf(" # ");
+            else
+                printf("   ");
         }
         printf("|");
         printf("\n");
@@ -106,4 +119,30 @@ void displayMaze(Cell maze[][MAZE_HEIGHT])
         printf("+---");
     }
     printf("+");
+}
+
+int findExit(Cell maze[][MAZE_HEIGHT], unsigned int xPosition, unsigned int yPosition)
+{
+    int onTheExitPathCounter = 0;
+    maze[xPosition][yPosition].alreadyChecked = 1;
+
+    if (xPosition == MAZE_WIDTH - 1 && yPosition == MAZE_HEIGHT - 1)
+        return 1;
+
+    if (!maze[xPosition][yPosition].walls[WEST] && xPosition - 1 >= 0 && !maze[xPosition - 1][yPosition].alreadyChecked)
+        onTheExitPathCounter += findExit(maze, xPosition - 1, yPosition);
+
+    if (!maze[xPosition][yPosition].walls[NORTH] && yPosition - 1 >= 0 && !maze[xPosition][yPosition - 1].alreadyChecked)
+        onTheExitPathCounter += findExit(maze, xPosition, yPosition - 1);
+
+    if (xPosition + 1 < MAZE_WIDTH && !maze[xPosition + 1][yPosition].walls[WEST] && !maze[xPosition + 1][yPosition].alreadyChecked)
+        onTheExitPathCounter += findExit(maze, xPosition + 1, yPosition);
+
+    if (yPosition + 1 < MAZE_HEIGHT && !maze[xPosition][yPosition + 1].walls[NORTH] && !maze[xPosition][yPosition + 1].alreadyChecked)
+        onTheExitPathCounter += findExit(maze, xPosition, yPosition + 1);
+
+    if (onTheExitPathCounter != 0)
+        onTheExitPathCounter = 1;
+    maze[xPosition][yPosition].belongsToExitPath = onTheExitPathCounter;
+    return onTheExitPathCounter;
 }
